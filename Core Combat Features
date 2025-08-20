@@ -1,0 +1,46 @@
+Core Combat Features:
+
+Gun-Fu Combo System: Links shooting and melee into flowing combos
+Dynamic Weapon Switching: Automatic disarming when you run out of ammo
+Bullet Time: Slow-motion during high-level combos
+Environmental Kills: Context-sensitive finishing moves
+Notoriety System: Heat that builds as you fight
+
+Key John Wick Elements:
+
+Ammo scarcity forces weapon pickups (just like the movies)
+Combo system rewards chaining different attack types
+Environmental interactions for stylish kills
+Escalating danger through the notoriety system
+
+Next Steps to Get This Running
+
+Set up Unreal Project:
+cpp// Create new UE5 C++ project
+// Add this code to your player character class
+// Set up input mappings in Project Settings
+
+Input Mappings Needed:
+
+Fire (Mouse Left Click)
+Reload (R key)
+Melee (F key)
+Aim (Mouse Right Click)
+BulletTime (Q key)
+Disarm (E key)
+
+
+Immediate Testing:
+
+Compile and test basic shooting
+Try the combo system (melee → shoot → melee)
+Watch notoriety increase as you fight
+
+
+
+What to Build Next
+
+Enemy AI that responds to your combos
+Weapon meshes and animations
+Cover system for tactical gameplay
+Continental Hub as your safe zone
