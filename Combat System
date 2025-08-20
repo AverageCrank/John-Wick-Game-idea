@@ -1,0 +1,807 @@
+// ==================================================
+// JOHN WICK COMBAT SYSTEM - CORE FOUNDATION
+// Built for Unreal Engine 5 - C++ Implementation
+// ==================================================
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+#include "Components/TimelineComponent.h"
+#include "Engine/Engine.h"
+#include "JohnWickPlayer.generated.h"
+
+// Forward declarations
+class UWeaponComponent;
+class UNotorietySystem;
+class UFactionManager;
+
+// Enums for combat states and weapon types
+UENUM(BlueprintType)
+enum class ECombatState : uint8
+{
+    Idle        UMETA(DisplayName = "Idle"),
+    Aiming      UMETA(DisplayName = "Aiming"),
+    Shooting    UMETA(DisplayName = "Shooting"),
+    Reloading   UMETA(DisplayName = "Reloading"),
+    Melee       UMETA(DisplayName = "Melee"),
+    GunFu       UMETA(DisplayName = "Gun-Fu Combo"),
+    TakingCover UMETA(DisplayName = "Taking Cover")
+};
+
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+    None        UMETA(DisplayName = "None"),
+    Pistol      UMETA(DisplayName = "Pistol"),
+    SMG         UMETA(DisplayName = "SMG"),
+    Shotgun     UMETA(DisplayName = "Shotgun"),
+    Rifle       UMETA(DisplayName = "Rifle"),
+    Knife       UMETA(DisplayName = "Knife")
+};
+
+// Weapon data structure
+USTRUCT(BlueprintType)
+struct FWeaponStats
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float Damage = 25.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float FireRate = 0.15f; // Time between shots
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 MagazineSize = 15;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float ReloadTime = 2.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float Range = 5000.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bIsAutomatic = false;
+
+    FWeaponStats()
+    {
+        Damage = 25.0f;
+        FireRate = 0.15f;
+        MagazineSize = 15;
+        ReloadTime = 2.0f;
+        Range = 5000.0f;
+        bIsAutomatic = false;
+    }
+};
+
+// Main John Wick Player Character Class
+UCLASS()
+class JOHNWICK_API AJohnWickPlayer : public ACharacter
+{
+    GENERATED_BODY()
+
+public:
+    AJohnWickPlayer();
+
+protected:
+    virtual void BeginPlay() override;
+    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+public:
+    virtual void Tick(float DeltaTime) override;
+
+    // ===== COMBAT SYSTEM =====
+    
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+    ECombatState CurrentCombatState;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    EWeaponType CurrentWeaponType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    FWeaponStats CurrentWeaponStats;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    int32 CurrentAmmo;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float Health = 100.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float MaxHealth = 100.0f;
+
+    // Gun-Fu Combo System
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float ComboTimer = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float ComboWindowDuration = 3.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    int32 ComboLevel = 0;
+
+    // Bullet Time System
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    bool bIsBulletTimeActive = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float BulletTimeDuration = 2.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float BulletTimeScale = 0.3f;
+
+    // ===== INPUT FUNCTIONS =====
+    
+    // Basic movement
+    void MoveForward(float Value);
+    void MoveRight(float Value);
+    void Turn(float Value);
+    void LookUp(float Value);
+
+    // Combat actions
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StartFiring();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StopFiring();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void Reload();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void MeleeAttack();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StartAiming();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StopAiming();
+
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void ActivateBulletTime();
+
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void DisarmEnemy();
+
+    // ===== CORE COMBAT FUNCTIONS =====
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void FireWeapon();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void PerformLineTrace();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void DealDamage(AActor* Target, float DamageAmount);
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void SwitchWeapon(EWeaponType NewWeaponType);
+
+    // Gun-Fu System
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StartGunFuCombo();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void ContinueGunFuCombo();
+    
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void EndGunFuCombo();
+
+    // Environmental Interactions
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void PerformEnvironmentalKill(AActor* Target);
+
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void InteractWithCover();
+
+    // ===== NOTORIETY INTEGRATION =====
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Systems")
+    class UNotorietySystem* NotorietyComponent;
+
+    UFUNCTION(BlueprintCallable, Category = "Systems")
+    void AddNotoriety(float Amount);
+
+private:
+    // Internal timers and counters
+    float LastFireTime;
+    bool bIsFiring;
+    bool bIsReloading;
+    bool bIsAiming;
+    
+    // Gun-Fu combo tracking
+    TArray<FString> ComboActions;
+    float LastComboActionTime;
+
+    // Bullet time
+    UTimelineComponent* BulletTimeTimeline;
+    
+    // Helper functions
+    void UpdateCombatState();
+    void HandleAutomaticFire();
+    void ResetCombo();
+    bool CanFire() const;
+    bool CanReload() const;
+    AActor* GetTargetInRange() const;
+};
+
+// ==================================================
+// IMPLEMENTATION
+// ==================================================
+
+AJohnWickPlayer::AJohnWickPlayer()
+{
+    PrimaryActorTick.bCanEverTick = true;
+    
+    // Initialize combat variables
+    CurrentCombatState = ECombatState::Idle;
+    CurrentWeaponType = EWeaponType::Pistol;
+    CurrentAmmo = CurrentWeaponStats.MagazineSize;
+    
+    bIsFiring = false;
+    bIsReloading = false;
+    bIsAiming = false;
+    LastFireTime = 0.0f;
+    
+    ComboLevel = 0;
+    ComboTimer = 0.0f;
+    
+    // Create components
+    NotorietyComponent = CreateDefaultSubobject<UNotorietySystem>(TEXT("NotorietySystem"));
+    BulletTimeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BulletTimeTimeline"));
+}
+
+void AJohnWickPlayer::BeginPlay()
+{
+    Super::BeginPlay();
+    
+    // Initialize weapon stats based on starting weapon
+    SwitchWeapon(CurrentWeaponType);
+}
+
+void AJohnWickPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    // Bind movement
+    PlayerInputComponent->BindAxis("MoveForward", this, &AJohnWickPlayer::MoveForward);
+    PlayerInputComponent->BindAxis("MoveRight", this, &AJohnWickPlayer::MoveRight);
+    PlayerInputComponent->BindAxis("Turn", this, &AJohnWickPlayer::Turn);
+    PlayerInputComponent->BindAxis("LookUp", this, &AJohnWickPlayer::LookUp);
+
+    // Bind combat actions
+    PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AJohnWickPlayer::StartFiring);
+    PlayerInputComponent->BindAction("Fire", IE_Released, this, &AJohnWickPlayer::StopFiring);
+    PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AJohnWickPlayer::Reload);
+    PlayerInputComponent->BindAction("Melee", IE_Pressed, this, &AJohnWickPlayer::MeleeAttack);
+    PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AJohnWickPlayer::StartAiming);
+    PlayerInputComponent->BindAction("Aim", IE_Released, this, &AJohnWickPlayer::StopAiming);
+    PlayerInputComponent->BindAction("BulletTime", IE_Pressed, this, &AJohnWickPlayer::ActivateBulletTime);
+    PlayerInputComponent->BindAction("Disarm", IE_Pressed, this, &AJohnWickPlayer::DisarmEnemy);
+}
+
+void AJohnWickPlayer::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    
+    // Update combat state
+    UpdateCombatState();
+    
+    // Handle automatic firing
+    if (bIsFiring && CurrentWeaponStats.bIsAutomatic)
+    {
+        HandleAutomaticFire();
+    }
+    
+    // Update combo timer
+    if (ComboTimer > 0.0f)
+    {
+        ComboTimer -= DeltaTime;
+        if (ComboTimer <= 0.0f)
+        {
+            EndGunFuCombo();
+        }
+    }
+}
+
+// ===== MOVEMENT =====
+
+void AJohnWickPlayer::MoveForward(float Value)
+{
+    if (Value != 0.0f && !bIsReloading)
+    {
+        AddMovementInput(GetActorForwardVector(), Value);
+    }
+}
+
+void AJohnWickPlayer::MoveRight(float Value)
+{
+    if (Value != 0.0f && !bIsReloading)
+    {
+        AddMovementInput(GetActorRightVector(), Value);
+    }
+}
+
+void AJohnWickPlayer::Turn(float Value)
+{
+    AddControllerYawInput(Value);
+}
+
+void AJohnWickPlayer::LookUp(float Value)
+{
+    AddControllerPitchInput(Value);
+}
+
+// ===== COMBAT ACTIONS =====
+
+void AJohnWickPlayer::StartFiring()
+{
+    if (CanFire())
+    {
+        bIsFiring = true;
+        FireWeapon();
+    }
+}
+
+void AJohnWickPlayer::StopFiring()
+{
+    bIsFiring = false;
+}
+
+void AJohnWickPlayer::FireWeapon()
+{
+    if (!CanFire()) return;
+
+    // Check ammo
+    if (CurrentAmmo <= 0)
+    {
+        // Auto-reload or switch to melee
+        if (ComboLevel > 0)
+        {
+            // In combo mode, automatically disarm nearby enemy for their weapon
+            DisarmEnemy();
+            return;
+        }
+        else
+        {
+            Reload();
+            return;
+        }
+    }
+
+    // Perform line trace for hit detection
+    PerformLineTrace();
+    
+    // Consume ammo
+    CurrentAmmo--;
+    
+    // Update fire timing
+    LastFireTime = GetWorld()->GetTimeSeconds();
+    
+    // Add to Gun-Fu combo if active
+    if (ComboLevel > 0)
+    {
+        ContinueGunFuCombo();
+    }
+    
+    // Add small amount of notoriety for each shot
+    AddNotoriety(1.0f);
+    
+    UE_LOG(LogTemp, Warning, TEXT("Firing weapon! Ammo remaining: %d"), CurrentAmmo);
+}
+
+void AJohnWickPlayer::PerformLineTrace()
+{
+    FVector Start = GetActorLocation();
+    FVector Forward = GetActorForwardVector();
+    FVector End = Start + (Forward * CurrentWeaponStats.Range);
+
+    FHitResult HitResult;
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(this);
+
+    bool bHit = GetWorld()->LineTraceSingleByChannel(
+        HitResult,
+        Start,
+        End,
+        ECollisionChannel::ECC_Pawn,
+        QueryParams
+    );
+
+    if (bHit && HitResult.GetActor())
+    {
+        DealDamage(HitResult.GetActor(), CurrentWeaponStats.Damage);
+        
+        // Check for environmental kill opportunity
+        if (ComboLevel >= 2)
+        {
+            PerformEnvironmentalKill(HitResult.GetActor());
+        }
+    }
+}
+
+void AJohnWickPlayer::DealDamage(AActor* Target, float DamageAmount)
+{
+    if (!Target) return;
+    
+    // Apply damage (this would integrate with your health system)
+    UE_LOG(LogTemp, Warning, TEXT("Dealing %.1f damage to %s"), DamageAmount, *Target->GetName());
+    
+    // Increase notoriety based on damage dealt
+    AddNotoriety(DamageAmount * 0.1f);
+}
+
+void AJohnWickPlayer::Reload()
+{
+    if (!CanReload()) return;
+
+    bIsReloading = true;
+    CurrentCombatState = ECombatState::Reloading;
+    
+    // Start reload timer
+    FTimerHandle ReloadTimer;
+    GetWorldTimerManager().SetTimer(ReloadTimer, [this]()
+    {
+        CurrentAmmo = CurrentWeaponStats.MagazineSize;
+        bIsReloading = false;
+        UE_LOG(LogTemp, Warning, TEXT("Reload complete! Ammo: %d"), CurrentAmmo);
+    }, CurrentWeaponStats.ReloadTime, false);
+    
+    UE_LOG(LogTemp, Warning, TEXT("Reloading..."));
+}
+
+void AJohnWickPlayer::MeleeAttack()
+{
+    if (bIsReloading) return;
+    
+    CurrentCombatState = ECombatState::Melee;
+    
+    // Check for targets in melee range
+    AActor* Target = GetTargetInRange();
+    if (Target)
+    {
+        DealDamage(Target, 50.0f); // Melee does more damage
+        
+        // Start or continue Gun-Fu combo
+        if (ComboLevel == 0)
+        {
+            StartGunFuCombo();
+        }
+        else
+        {
+            ContinueGunFuCombo();
+        }
+        
+        ComboActions.Add(TEXT("Melee"));
+    }
+    
+    AddNotoriety(2.0f); // Melee kills are more "noticeable"
+}
+
+void AJohnWickPlayer::StartAiming()
+{
+    if (!bIsReloading)
+    {
+        bIsAiming = true;
+        CurrentCombatState = ECombatState::Aiming;
+    }
+}
+
+void AJohnWickPlayer::StopAiming()
+{
+    bIsAiming = false;
+    if (CurrentCombatState == ECombatState::Aiming)
+    {
+        CurrentCombatState = ECombatState::Idle;
+    }
+}
+
+// ===== GUN-FU COMBO SYSTEM =====
+
+void AJohnWickPlayer::StartGunFuCombo()
+{
+    ComboLevel = 1;
+    ComboTimer = ComboWindowDuration;
+    CurrentCombatState = ECombatState::GunFu;
+    ComboActions.Empty();
+    
+    UE_LOG(LogTemp, Warning, TEXT("Gun-Fu combo started!"));
+}
+
+void AJohnWickPlayer::ContinueGunFuCombo()
+{
+    ComboLevel = FMath::Min(ComboLevel + 1, 5); // Max combo level of 5
+    ComboTimer = ComboWindowDuration; // Reset timer
+    
+    // Combo bonuses
+    if (ComboLevel >= 3)
+    {
+        // Activate bullet time briefly
+        ActivateBulletTime();
+    }
+    
+    UE_LOG(LogTemp, Warning, TEXT("Gun-Fu combo level %d!"), ComboLevel);
+}
+
+void AJohnWickPlayer::EndGunFuCombo()
+{
+    int32 FinalComboLevel = ComboLevel;
+    
+    ComboLevel = 0;
+    ComboTimer = 0.0f;
+    ComboActions.Empty();
+    CurrentCombatState = ECombatState::Idle;
+    
+    // Bonus notoriety reduction for stylish combos
+    if (FinalComboLevel >= 3)
+    {
+        AddNotoriety(-5.0f); // High-style combos actually reduce heat temporarily
+    }
+    
+    UE_LOG(LogTemp, Warning, TEXT("Gun-Fu combo ended. Final level: %d"), FinalComboLevel);
+}
+
+// ===== SPECIAL ACTIONS =====
+
+void AJohnWickPlayer::DisarmEnemy()
+{
+    // Find nearby enemy with weapon
+    AActor* Target = GetTargetInRange();
+    if (Target)
+    {
+        // Disarm animation would play here
+        // For now, just switch to their weapon type and refill ammo
+        SwitchWeapon(EWeaponType::Pistol); // Simplified - would be dynamic
+        CurrentAmmo = CurrentWeaponStats.MagazineSize;
+        
+        StartGunFuCombo();
+        ComboActions.Add(TEXT("Disarm"));
+        
+        UE_LOG(LogTemp, Warning, TEXT("Disarmed enemy and took their weapon!"));
+    }
+}
+
+void AJohnWickPlayer::PerformEnvironmentalKill(AActor* Target)
+{
+    if (!Target || ComboLevel < 2) return;
+    
+    // Check for environmental hazards nearby
+    // This is simplified - you'd check for specific environmental objects
+    
+    DealDamage(Target, 999.0f); // Environmental kills are instant
+    ContinueGunFuCombo();
+    ComboActions.Add(TEXT("Environmental"));
+    
+    // Environmental kills add significant notoriety
+    AddNotoriety(10.0f);
+    
+    UE_LOG(LogTemp, Warning, TEXT("Environmental kill executed!"));
+}
+
+void AJohnWickPlayer::ActivateBulletTime()
+{
+    if (bIsBulletTimeActive) return;
+    
+    bIsBulletTimeActive = true;
+    
+    // Slow down time
+    GetWorld()->GetWorldSettings()->SetTimeDilation(BulletTimeScale);
+    
+    // End bullet time after duration
+    FTimerHandle BulletTimeTimer;
+    GetWorldTimerManager().SetTimer(BulletTimeTimer, [this]()
+    {
+        GetWorld()->GetWorldSettings()->SetTimeDilation(1.0f);
+        bIsBulletTimeActive = false;
+    }, BulletTimeDuration * BulletTimeScale, false); // Adjust for time dilation
+    
+    UE_LOG(LogTemp, Warning, TEXT("Bullet time activated!"));
+}
+
+void AJohnWickPlayer::SwitchWeapon(EWeaponType NewWeaponType)
+{
+    CurrentWeaponType = NewWeaponType;
+    
+    // Set weapon stats based on type
+    switch (NewWeaponType)
+    {
+        case EWeaponType::Pistol:
+            CurrentWeaponStats.Damage = 25.0f;
+            CurrentWeaponStats.FireRate = 0.15f;
+            CurrentWeaponStats.MagazineSize = 15;
+            CurrentWeaponStats.ReloadTime = 1.5f;
+            CurrentWeaponStats.bIsAutomatic = false;
+            break;
+            
+        case EWeaponType::SMG:
+            CurrentWeaponStats.Damage = 18.0f;
+            CurrentWeaponStats.FireRate = 0.08f;
+            CurrentWeaponStats.MagazineSize = 30;
+            CurrentWeaponStats.ReloadTime = 2.0f;
+            CurrentWeaponStats.bIsAutomatic = true;
+            break;
+            
+        case EWeaponType::Shotgun:
+            CurrentWeaponStats.Damage = 80.0f;
+            CurrentWeaponStats.FireRate = 0.8f;
+            CurrentWeaponStats.MagazineSize = 6;
+            CurrentWeaponStats.ReloadTime = 3.0f;
+            CurrentWeaponStats.Range = 1500.0f;
+            CurrentWeaponStats.bIsAutomatic = false;
+            break;
+            
+        default:
+            break;
+    }
+    
+    CurrentAmmo = CurrentWeaponStats.MagazineSize;
+    UE_LOG(LogTemp, Warning, TEXT("Switched to weapon type %d"), (int32)NewWeaponType);
+}
+
+// ===== HELPER FUNCTIONS =====
+
+void AJohnWickPlayer::UpdateCombatState()
+{
+    if (bIsReloading)
+    {
+        CurrentCombatState = ECombatState::Reloading;
+    }
+    else if (ComboLevel > 0)
+    {
+        CurrentCombatState = ECombatState::GunFu;
+    }
+    else if (bIsAiming)
+    {
+        CurrentCombatState = ECombatState::Aiming;
+    }
+    else if (bIsFiring)
+    {
+        CurrentCombatState = ECombatState::Shooting;
+    }
+    else
+    {
+        CurrentCombatState = ECombatState::Idle;
+    }
+}
+
+void AJohnWickPlayer::HandleAutomaticFire()
+{
+    float CurrentTime = GetWorld()->GetTimeSeconds();
+    if (CurrentTime - LastFireTime >= CurrentWeaponStats.FireRate)
+    {
+        FireWeapon();
+    }
+}
+
+bool AJohnWickPlayer::CanFire() const
+{
+    return !bIsReloading && 
+           (GetWorld()->GetTimeSeconds() - LastFireTime >= CurrentWeaponStats.FireRate);
+}
+
+bool AJohnWickPlayer::CanReload() const
+{
+    return !bIsReloading && 
+           !bIsFiring && 
+           CurrentAmmo < CurrentWeaponStats.MagazineSize;
+}
+
+AActor* AJohnWickPlayer::GetTargetInRange() const
+{
+    // Simplified target detection - in reality you'd do a sphere or cone trace
+    TArray<AActor*> FoundActors;
+    
+    // This is a placeholder - you'd implement proper enemy detection here
+    return nullptr;
+}
+
+void AJohnWickPlayer::AddNotoriety(float Amount)
+{
+    if (NotorietyComponent)
+    {
+        // This would call your notoriety system
+        UE_LOG(LogTemp, Warning, TEXT("Adding %.1f notoriety"), Amount);
+    }
+}
+
+// ==================================================
+// NOTORIETY SYSTEM COMPONENT
+// ==================================================
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class JOHNWICK_API UNotorietySystem : public UActorComponent
+{
+    GENERATED_BODY()
+
+public:
+    UNotorietySystem();
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notoriety")
+    float CurrentHeat = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notoriety")
+    float MaxHeat = 100.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notoriety")
+    int32 CurrentTier = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notoriety")
+    TArray<float> TierThresholds = {20.0f, 40.0f, 60.0f, 80.0f, 100.0f};
+
+    UFUNCTION(BlueprintCallable, Category = "Notoriety")
+    void AddHeat(float Amount);
+
+    UFUNCTION(BlueprintCallable, Category = "Notoriety")
+    void ReduceHeat(float Amount);
+
+    UFUNCTION(BlueprintCallable, Category = "Notoriety")
+    void ClearHeat();
+
+    UFUNCTION(BlueprintCallable, Category = "Notoriety")
+    int32 GetCurrentTier() const;
+
+private:
+    void UpdateTier();
+    void SpawnHunters();
+};
+
+UNotorietySystem::UNotorietySystem()
+{
+    PrimaryComponentTick.bCanEverTick = false;
+}
+
+void UNotorietySystem::AddHeat(float Amount)
+{
+    CurrentHeat = FMath::Clamp(CurrentHeat + Amount, 0.0f, MaxHeat);
+    UpdateTier();
+    
+    UE_LOG(LogTemp, Warning, TEXT("Heat increased by %.1f. Current: %.1f/%.1f (Tier %d)"), 
+           Amount, CurrentHeat, MaxHeat, CurrentTier);
+}
+
+void UNotorietySystem::ReduceHeat(float Amount)
+{
+    CurrentHeat = FMath::Clamp(CurrentHeat - Amount, 0.0f, MaxHeat);
+    UpdateTier();
+}
+
+void UNotorietySystem::ClearHeat()
+{
+    CurrentHeat = 0.0f;
+    CurrentTier = 0;
+    UE_LOG(LogTemp, Warning, TEXT("Heat cleared!"));
+}
+
+int32 UNotorietySystem::GetCurrentTier() const
+{
+    return CurrentTier;
+}
+
+void UNotorietySystem::UpdateTier()
+{
+    int32 NewTier = 0;
+    for (int32 i = 0; i < TierThresholds.Num(); i++)
+    {
+        if (CurrentHeat >= TierThresholds[i])
+        {
+            NewTier = i + 1;
+        }
+    }
+    
+    if (NewTier != CurrentTier)
+    {
+        CurrentTier = NewTier;
+        if (CurrentTier > 0)
+        {
+            SpawnHunters();
+        }
+        UE_LOG(LogTemp, Warning, TEXT("Notoriety tier changed to %d!"), CurrentTier);
+    }
+}
+
+void UNotorietySystem::SpawnHunters()
+{
+    // This is where you'd spawn enemy hunters based on the current tier
+    UE_LOG(LogTemp, Warning, TEXT("Spawning tier %d hunters!"), CurrentTier);
+}
